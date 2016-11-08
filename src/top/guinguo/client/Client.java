@@ -1,5 +1,6 @@
 package top.guinguo.client;
 
+import top.guinguo.http.Header;
 import top.guinguo.http.HttpResponse;
 import top.guinguo.util.DialogUtil;
 
@@ -7,13 +8,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.Socket;
-import java.net.URL;
 
 /**
  * Created by guin_guo on 2016/11/7.
@@ -32,7 +30,8 @@ public class Client extends JFrame {
     private String labels[] = { "GET", "POST", "DELETE", "PUT"};
     private JComboBox<String> selects = new JComboBox<>(labels);
 
-    private JTextArea content = new JTextArea("请在请求头与请求体之间用空行隔开");
+    private JTextArea header = new JTextArea();
+    private JTextArea body = new JTextArea();
     //IO
     private DataOutputStream toServer;
     private InputStream fromServer;
@@ -61,12 +60,18 @@ public class Client extends JFrame {
         c.gridx = 3;
         c.weightx = 0.1;
         p.add(send,c);
-        content.setPreferredSize(new Dimension(200,230));
+        header.setPreferredSize(new Dimension(100,230));
         c.gridy = 1;
         c.gridx = 0;
+        c.gridwidth = 2;
+        header.setBorder(BorderFactory.createTitledBorder("HEADER"));
+        p.add(header,c);
+        body.setPreferredSize(new Dimension(300,230));
+        c.gridy = 1;
+        c.gridx = 2;
         c.gridwidth = 4;
-        content.setBorder(BorderFactory.createTitledBorder("content"));
-        p.add(content,c);
+        body.setBorder(BorderFactory.createTitledBorder("BODY"));
+        p.add(body,c);
         urlInput.setHorizontalAlignment(JTextField.LEFT);
 
         setLayout(new BorderLayout());
@@ -84,7 +89,6 @@ public class Client extends JFrame {
         setLocation(200,100);
         this.host = "localhost";
         this.port = 8000;
-        this.content.setText("");
     }
 
     private class ButtonListener implements ActionListener {
@@ -94,16 +98,15 @@ public class Client extends JFrame {
             try {
                 String method = selects.getSelectedItem().toString();
                 String url = urlInput.getText();
-                String requestContent = content.getText();
-
-                DialogUtil.showMsg(requestContent);
+                String requestContent = header.getText();
                 try {
                     socket = new Socket(host,port);
-                    socket = toSocket(socket, url, method, requestContent);
+                    socket.setSendBufferSize(8*1024*1024);//8M
+                    socket = sendSocket(socket, url, method, requestContent);
                     //send 2 server
                     if (socket != null) {
-                        toServer.flush();
                         fromServer = socket.getInputStream();
+
                     }
                 } catch (IOException ex) {
                     jta.append(ex.getMessage() + "\n");
@@ -125,7 +128,7 @@ public class Client extends JFrame {
         }
     }
 
-    public Socket toSocket(Socket socket, String url, String method, String content) {
+    public Socket sendSocket(Socket socket, String url, String method, String content) {
         StringBuffer sb = new StringBuffer();
         //first line   GET url HTTP/1.1 \n\r
         sb.append(method + " ");
@@ -137,22 +140,36 @@ public class Client extends JFrame {
             url = "http://" + url;
         }
         sb.append(url + " " + "HTTP/1.1").append("\n\r");
-        URL u = null;
-        try {
-            u = new URL(url);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            DialogUtil.showMsg(e.getMessage());
-        }
         //second header body
+        if (method.equals("POST") || method.equals("PUT")) {
+            String[] headers = content.split("\n");
+            Header header = null;
+            for (int i = 0;i<headers.length;i++) {
+                if (headers[i].toLowerCase().startsWith("header-type")) {
+                    header = Header.parse(headers[i]);
+                    break;
+                }
+            }
+            if (header == null) {
+                header = Header.parse("Content-Type: application/x-www-form-urlencoded");
+            }
+            sb.append(header.toString());
+        }
         sb.append(content);
+        jta.append(sb.toString()+"\n");
         try {
+            socket.setSendBufferSize(sb.toString().getBytes().length+1024);
             toServer = new DataOutputStream(socket.getOutputStream());
             toServer.writeBytes(sb.toString());
+            toServer.flush();
         } catch (IOException e) {
             e.printStackTrace();
             DialogUtil.showMsg(e.getMessage());
         }
         return socket;
+    }
+    public void log(String msg) {
+        //jta.append
+        jta.append(msg);
     }
 }

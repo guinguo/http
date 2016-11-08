@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -19,6 +20,7 @@ import java.util.Date;
 public class Server extends JFrame {
     private static int port = 8000;
     private ServerSocket serverSocket;
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private JTextArea jta = new JTextArea();
 
@@ -29,6 +31,7 @@ public class Server extends JFrame {
         setLayout(new BorderLayout());
         jta.setBackground(Color.BLACK);
         jta.setForeground(Color.WHITE);
+        jta.setEditable(false);
         add(new JScrollPane(jta), BorderLayout.CENTER);
 
         setTitle("HttpServer");
@@ -39,16 +42,16 @@ public class Server extends JFrame {
 
         try {
             serverSocket = new ServerSocket(port);
-            log("HttpServer is started at " + new Date() + "\n");
+            log("HttpServer is started");
 
 
             while (true) {
                 Socket socket = serverSocket.accept();
-                log("收到请求，时间是" + new Date());
+                log("收到请求，时间是" + sdf.format(new Date()));
 
                 InetAddress inetAddress = socket.getInetAddress();
-                log("客户主机名为" + inetAddress.getHostName() + "\n");
-                log("客户IP地址为" + inetAddress.getHostAddress() + "\n");
+                log("客户主机名为" + inetAddress.getHostName());
+                log("客户IP地址为" + inetAddress.getHostAddress());
 
                 Thread task = new Thread(new HandleClient(socket,this));
                 task.start();
@@ -72,22 +75,37 @@ public class Server extends JFrame {
             try {
                 HttpRequest request = new HttpRequest(socket.getInputStream());
                 HttpResponse response = new HttpResponse(socket.getOutputStream());
-                this.handle(request, response);
+                DataInputStream inputFromClient =
+                        new DataInputStream(socket.getInputStream());
 
-                socket.close();
-                server.log(response.getCode().toString());
+                byte[] bytes = new byte[1024];
+                int len;
+                while ((len = inputFromClient.read(bytes)) >= 0) {
+                    jta.append(new String(bytes,0,len));
+                    System.out.write(bytes,0,len);
+                }
+
+                this.server.handle(request, response);
+
             } catch (IOException e) {
                 System.err.println(e.getMessage());
+                jta.append(e.getMessage());
+            } finally {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    jta.append(e.getMessage());
+                }
             }
 
         }
 
-        public void handle(HttpRequest request, HttpResponse response) {
-        }
     }
-
+    public void handle(HttpRequest request, HttpResponse response) {
+    }
     public void log(String msg) {
         //jta.append
-        jta.append(msg);
+        jta.append(sdf.format(new Date()) + " INFO " + " "+msg+"\n");
     }
 }
