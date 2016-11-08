@@ -1,6 +1,7 @@
 package top.guinguo.client;
 
 import top.guinguo.http.HttpResponse;
+import top.guinguo.util.DialogUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,7 +11,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.Socket;
+import java.net.URL;
 
 /**
  * Created by guin_guo on 2016/11/7.
@@ -18,6 +21,7 @@ import java.net.Socket;
 public class Client extends JFrame {
     public static String host;
     public static int port;
+    public static String  lastQueryUrl;
 
     //input for url
     private JTextField urlInput = new JTextField();
@@ -28,7 +32,7 @@ public class Client extends JFrame {
     private String labels[] = { "GET", "POST", "DELETE", "PUT"};
     private JComboBox<String> selects = new JComboBox<>(labels);
 
-    private JTextArea content = new JTextArea();
+    private JTextArea content = new JTextArea("请在请求头与请求体之间用空行隔开");
     //IO
     private DataOutputStream toServer;
     private InputStream fromServer;
@@ -61,11 +65,13 @@ public class Client extends JFrame {
         c.gridy = 1;
         c.gridx = 0;
         c.gridwidth = 4;
+        content.setBorder(BorderFactory.createTitledBorder("content"));
         p.add(content,c);
         urlInput.setHorizontalAlignment(JTextField.LEFT);
 
         setLayout(new BorderLayout());
         add(p, BorderLayout.NORTH);
+        jta.setEditable(false);
         add(new JScrollPane(jta), BorderLayout.CENTER);
 
         //addActionListener
@@ -78,6 +84,7 @@ public class Client extends JFrame {
         setLocation(200,100);
         this.host = "localhost";
         this.port = 8000;
+        this.content.setText("");
     }
 
     private class ButtonListener implements ActionListener {
@@ -89,21 +96,21 @@ public class Client extends JFrame {
                 String url = urlInput.getText();
                 String requestContent = content.getText();
 
+                DialogUtil.showMsg(requestContent);
                 try {
                     socket = new Socket(host,port);
-                    socket = toSocket(url, method, requestContent);
-
+                    socket = toSocket(socket, url, method, requestContent);
                     //send 2 server
-                    toServer.flush();
-                    fromServer = socket.getInputStream();
+                    if (socket != null) {
+                        toServer.flush();
+                        fromServer = socket.getInputStream();
+                    }
                 } catch (IOException ex) {
                     jta.append(ex.getMessage() + "\n");
                 }
 
-
-                //1.get response
                 //2.print response
-                HttpResponse response = new HttpResponse(socket.getOutputStream());//TODO
+                HttpResponse response = new HttpResponse(socket.getInputStream());//TODO
             } catch (IOException e1) {
                 System.err.println(e1.getMessage());
             } finally {
@@ -118,13 +125,34 @@ public class Client extends JFrame {
         }
     }
 
-    public Socket toSocket(String url, String method, String content) {
-        //first line   GET url HTTP/1.1
-        //\\n\\r
-        //second header
-        //\\n\\r
-        //third body
-//        toServer = new DataOutputStream(socket.getOutputStream());
-        return null;
+    public Socket toSocket(Socket socket, String url, String method, String content) {
+        StringBuffer sb = new StringBuffer();
+        //first line   GET url HTTP/1.1 \n\r
+        sb.append(method + " ");
+        if (url == null || url.isEmpty()) {
+            DialogUtil.showMsg("请输入请求地址");
+            return null;
+        }
+        if (!url.startsWith("http://")) {
+            url = "http://" + url;
+        }
+        sb.append(url + " " + "HTTP/1.1").append("\n\r");
+        URL u = null;
+        try {
+            u = new URL(url);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            DialogUtil.showMsg(e.getMessage());
+        }
+        //second header body
+        sb.append(content);
+        try {
+            toServer = new DataOutputStream(socket.getOutputStream());
+            toServer.writeBytes(sb.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+            DialogUtil.showMsg(e.getMessage());
+        }
+        return socket;
     }
 }

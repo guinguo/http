@@ -2,6 +2,7 @@ package top.guinguo.http;
 
 import top.guinguo.util.Charset;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
@@ -11,12 +12,16 @@ public class HttpResponse {
     private ResponseStatusCode code;
 
     private OutputStream outputStream;
+    private InputStream inputStream;
     private Charset charset = Charset.UTF8;
     private ContentType contentType;
     private long contentLengthInBytes;
 
     public HttpResponse(OutputStream outputStream) {
         this.outputStream = outputStream;
+    }
+    public HttpResponse(InputStream inputStream) {
+        this.inputStream = inputStream;
     }
 
     public enum ContentType {
