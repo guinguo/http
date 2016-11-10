@@ -5,12 +5,11 @@ import top.guinguo.http.HttpResponse;
 import top.guinguo.util.DialogUtil;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.Socket;
 
 /**
@@ -27,6 +26,13 @@ public class Client extends JFrame {
     //display for receive from server
     private JTextArea jta = new JTextArea();
 
+    JButton send = new JButton("send");
+    private JButton openFile = new JButton("open");
+    private JButton clear = new JButton("clear");
+    private JFileChooser fileChooser = new JFileChooser();
+    private File selectFile = null;
+    private Long boundary = null;
+
     private String labels[] = { "GET", "POST", "DELETE", "PUT"};
     private JComboBox<String> selects = new JComboBox<>(labels);
 
@@ -35,6 +41,7 @@ public class Client extends JFrame {
     //IO
     private DataOutputStream toServer;
     private InputStream fromServer;
+    public static final String newLine = "\r\n";
 
     public static void main(String[] args) {
         new Client();
@@ -56,7 +63,6 @@ public class Client extends JFrame {
         c.gridx = 2;
         c.weightx = 0.1;
         p.add(selects,c);
-        JButton send = new JButton("Send");
         c.gridx = 3;
         c.weightx = 0.1;
         p.add(send,c);
@@ -66,13 +72,29 @@ public class Client extends JFrame {
         c.gridwidth = 2;
         header.setBorder(BorderFactory.createTitledBorder("HEADER"));
         p.add(header,c);
-        body.setPreferredSize(new Dimension(300,230));
+        body.setPreferredSize(new Dimension(300,160));
         c.gridy = 1;
         c.gridx = 2;
         c.gridwidth = 4;
         body.setBorder(BorderFactory.createTitledBorder("BODY"));
         p.add(body,c);
+        clear.setPreferredSize(new Dimension(50,30));
+        c.insets = new Insets(200, 2, 2, 2); // top padding
+        c.gridy = 1;
+        c.gridx = 2;
+        c.gridwidth = 1;
+        p.add(clear,c);
+        openFile.setPreferredSize(new Dimension(50,30));
+        c.insets = new Insets(200, 2, 2, 2); // top padding
+        c.gridy = 1;
+        c.gridx = 3;
+        c.gridwidth = 1;
+        p.add(openFile,c);
         urlInput.setHorizontalAlignment(JTextField.LEFT);
+
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fileChooser.setFileFilter(new FileNameExtensionFilter("文本文件", "txt", "js", "css",
+                "java", "php", "html", "htm"));
 
         setLayout(new BorderLayout());
         add(p, BorderLayout.NORTH);
@@ -80,7 +102,9 @@ public class Client extends JFrame {
         add(new JScrollPane(jta), BorderLayout.CENTER);
 
         //addActionListener
+        openFile.addActionListener(new ButtonListener());
         send.addActionListener(new ButtonListener());
+        clear.addActionListener(new ButtonListener());
 
         setTitle("Client");
         setSize(800, 500);
@@ -94,41 +118,51 @@ public class Client extends JFrame {
     private class ButtonListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            Socket socket = null;
-            try {
-                String method = selects.getSelectedItem().toString();
-                String url = urlInput.getText();
-                String requestContent = header.getText();
+            JButton button = (JButton) e.getSource();
+            if (button.getText().equals("send")) {
+                Socket socket = null;
+                boundary = null;
                 try {
-                    socket = new Socket(host,port);
-                    socket.setSendBufferSize(8*1024*1024);//8M
-                    socket = sendSocket(socket, url, method, requestContent);
-                    //send 2 server
-                    if (socket != null) {
-                        fromServer = socket.getInputStream();
+                    String method = selects.getSelectedItem().toString();
+                    String url = urlInput.getText();
+                    String requestHeader = header.getText();
+                    String requestBody   = body.getText();
+                    try {
+                        socket = new Socket(host,port);
+                        socket.setSendBufferSize(8*1024*1024);//8M
+                        socket = sendSocket(socket, url, method, requestHeader,requestBody);
+                        //send 2 server
+                        if (socket != null) {
+                            fromServer = socket.getInputStream();
 
+                        }
+                    } catch (IOException ex) {
+                        jta.append(ex.getMessage() + "\n");
                     }
-                } catch (IOException ex) {
-                    jta.append(ex.getMessage() + "\n");
-                }
 
-                //2.print response
-                HttpResponse response = new HttpResponse(socket.getInputStream());//TODO
-            } catch (IOException e1) {
-                System.err.println(e1.getMessage());
-            } finally {
-                try {
-                    toServer.close();
-                    fromServer.close();
-                    socket.close();
+                    //2.print response
+                    HttpResponse response = new HttpResponse(socket.getInputStream());//TODO
                 } catch (IOException e1) {
-                    e1.printStackTrace();
+                    System.err.println(e1.getMessage());
+                } finally {
+                    try {
+                        toServer.close();
+                        fromServer.close();
+                        socket.close();
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
                 }
+            } else if (button.getText().equals("open")) {
+                fileChooser.showDialog(new JLabel(), "选择文件");
+                selectFile =fileChooser.getSelectedFile();
+            } else if (button.getText().equals("clear")) {
+                jta.setText("");
             }
         }
     }
 
-    public Socket sendSocket(Socket socket, String url, String method, String content) {
+    public Socket sendSocket(Socket socket, String url, String method, String requestHeader, String requestBody) {
         StringBuffer sb = new StringBuffer();
         //first line   GET url HTTP/1.1 \n\r
         sb.append(method + " ");
@@ -139,24 +173,22 @@ public class Client extends JFrame {
         if (!url.startsWith("http://")) {
             url = "http://" + url;
         }
-        sb.append(url + " " + "HTTP/1.1").append("\n\r");
+        sb.append(url + " " + "HTTP/1.1").append(newLine);
         //second header body
-        if (method.equals("POST") || method.equals("PUT")) {
-            String[] headers = content.split("\n");
-            Header header = null;
-            for (int i = 0;i<headers.length;i++) {
-                if (headers[i].toLowerCase().startsWith("header-type")) {
-                    header = Header.parse(headers[i]);
-                    break;
-                }
-            }
-            if (header == null) {
-                header = Header.parse("Content-Type: application/x-www-form-urlencoded");
-            }
-            sb.append(header.toString());
+        sb = prepareReq(sb, method, requestHeader);
+        if (!method.equals("GET")) {
+            sb.append(newLine);
+            sb.append(newLine);
         }
-        sb.append(content);
-        jta.append(sb.toString()+"\n");
+        if (boundary != null) {
+            sb.append("------httpClient" + boundary).append(newLine);
+            sb.append(Header.parse("Content-Disposition: form-data; name=\"file\"; filename=\"" + selectFile.getName() + "\"")).append(newLine);
+            sb.append(Header.parse("Content-Type: text/html")).append(newLine).append(newLine);
+            sb.append(toFileText());
+            sb.append("------httpClient" + boundary).append("--").append(newLine);
+//            sb.append(requestBody).append(newLine);
+        }
+        jta.append(sb.toString()+newLine);
         try {
             socket.setSendBufferSize(sb.toString().getBytes().length+1024);
             toServer = new DataOutputStream(socket.getOutputStream());
@@ -168,6 +200,55 @@ public class Client extends JFrame {
         }
         return socket;
     }
+
+    private String toFileText() {
+        if (selectFile != null) {
+            StringBuffer sb = new StringBuffer();
+            try {
+                BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(selectFile)));
+                String line = br.readLine();
+                while (line != null) {
+                    sb.append(line).append(newLine);
+                    line = br.readLine();
+                }
+                return sb.toString();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return "";
+    }
+
+    private StringBuffer prepareReq(StringBuffer sb, String method, String requestHeader) {
+        if (method.equals("POST") || method.equals("PUT")) {
+            String[] headers = requestHeader.split("\n");
+            Header header = null;
+            for (int i = 0;i<headers.length;i++) {
+                if (headers[i].toLowerCase().startsWith("content-type")) {
+                    header = Header.parse(headers[i]);
+                    break;
+                }
+            }
+            if (header == null && selectFile == null) {
+                header = Header.parse("Content-Type: application/x-www-form-urlencoded");
+            } else if (selectFile != null) {
+                boundary = System.currentTimeMillis();
+                header = Header.parse("Content-Type: multipart/form-data; boundary=----httpClient"+boundary);
+            }
+            sb.append(header.toString());
+            if (!requestHeader.isEmpty()) {
+                sb.append(newLine);
+            }
+            sb.append(requestHeader);
+
+        } else if (method.equals("GET")) {// GET
+            return sb;
+        } else{ // DELETE
+            return sb;
+        }
+        return sb;
+    }
+
     public void log(String msg) {
         //jta.append
         jta.append(msg);
