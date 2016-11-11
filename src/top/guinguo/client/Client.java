@@ -175,9 +175,8 @@ public class Client extends JFrame {
         }
         sb.append(url + " " + "HTTP/1.1").append(newLine);
         //second header body
-        sb = prepareReq(sb, method, requestHeader);
+        sb = prepareReq(sb, method, requestHeader,requestBody);
         if (!method.equals("GET")) {
-            sb.append(newLine);
             sb.append(newLine);
         }
         if (boundary != null) {
@@ -185,12 +184,24 @@ public class Client extends JFrame {
             sb.append(Header.parse("Content-Disposition: form-data; name=\"file\"; filename=\"" + selectFile.getName() + "\"")).append(newLine);
             sb.append(Header.parse("Content-Type: text/html")).append(newLine).append(newLine);
             sb.append(toFileText());
-            sb.append("------httpClient" + boundary).append("--").append(newLine);
-//            sb.append(requestBody).append(newLine);
+            sb.append("------httpClient" + boundary);
+            if (requestBody.isEmpty()) {
+                sb.append("--");
+            }
+            sb.append(newLine);
+        }
+        if (!requestBody.isEmpty()) {
+            if (boundary != null) {
+                sb.append(Header.parse("Content-Disposition: form-data;")).append(newLine);
+            }
+            sb.append(requestBody).append(newLine);
+            if (boundary != null) {
+                sb.append("------httpClient" + boundary).append("--");
+            }
+            sb.append(newLine);
         }
         jta.append(sb.toString()+newLine);
         try {
-            socket.setSendBufferSize(sb.toString().getBytes().length+1024);
             toServer = new DataOutputStream(socket.getOutputStream());
             toServer.writeBytes(sb.toString());
             toServer.flush();
@@ -219,7 +230,7 @@ public class Client extends JFrame {
         return "";
     }
 
-    private StringBuffer prepareReq(StringBuffer sb, String method, String requestHeader) {
+    private StringBuffer prepareReq(StringBuffer sb, String method, String requestHeader, String requestBody) {
         if (method.equals("POST") || method.equals("PUT")) {
             String[] headers = requestHeader.split("\n");
             Header header = null;
@@ -235,12 +246,13 @@ public class Client extends JFrame {
                 boundary = System.currentTimeMillis();
                 header = Header.parse("Content-Type: multipart/form-data; boundary=----httpClient"+boundary);
             }
-            sb.append(header.toString());
+            sb.append(header.toString()).append(newLine);
             if (!requestHeader.isEmpty()) {
-                sb.append(newLine);
+                sb.append(requestHeader).append(newLine);
             }
-            sb.append(requestHeader);
-
+            if (boundary != null) {
+                sb.append(Header.parse("Content-Length: " + selectFile.length()+requestBody.length())).append(newLine);
+            }
         } else if (method.equals("GET")) {// GET
             return sb;
         } else{ // DELETE
