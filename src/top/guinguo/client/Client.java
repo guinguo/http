@@ -19,6 +19,7 @@ public class Client extends JFrame {
     public static String host;
     public static int port;
     public static String  lastQueryUrl;
+    public static String NEWLINE = top.guinguo.util.Constants.NEWLINE;
 
     //input for url
     private JTextField urlInput = new JTextField();
@@ -41,7 +42,6 @@ public class Client extends JFrame {
     //IO
     private DataOutputStream toServer;
     private InputStream fromServer;
-    public static final String newLine = "\r\n";
 
     public static void main(String[] args) {
         new Client();
@@ -173,34 +173,34 @@ public class Client extends JFrame {
         if (!url.startsWith("http://")) {
             url = "http://" + url;
         }
-        sb.append(url + " " + "HTTP/1.1").append(newLine);
+        sb.append(url + " " + "HTTP/1.1").append(NEWLINE);
         //second header body
         sb = prepareReq(sb, method, requestHeader,requestBody);
         if (!method.equals("GET")) {
-            sb.append(newLine);
+            sb.append(NEWLINE);
         }
         if (boundary != null) {
-            sb.append("------httpClient" + boundary).append(newLine);
-            sb.append(Header.parse("Content-Disposition: form-data; name=\"file\"; filename=\"" + selectFile.getName() + "\"")).append(newLine);
-            sb.append(Header.parse("Content-Type: text/html")).append(newLine).append(newLine);
+            sb.append("------httpClient" + boundary).append(NEWLINE);
+            sb.append(Header.parse("Content-Disposition: form-data; name=\"file\"; filename=\"" + selectFile.getName() + "\"")).append(NEWLINE);
+            sb.append(Header.parse("Content-Type: text/html")).append(NEWLINE).append(NEWLINE);
             sb.append(toFileText());
             sb.append("------httpClient" + boundary);
             if (requestBody.isEmpty()) {
                 sb.append("--");
             }
-            sb.append(newLine);
+            sb.append(NEWLINE);
         }
         if (!requestBody.isEmpty()) {
             if (boundary != null) {
-                sb.append(Header.parse("Content-Disposition: form-data;")).append(newLine);
+                sb.append(Header.parse("Content-Disposition: form-data;")).append(NEWLINE);
             }
-            sb.append(requestBody).append(newLine);
+            sb.append(requestBody).append(NEWLINE);
             if (boundary != null) {
                 sb.append("------httpClient" + boundary).append("--");
             }
-            sb.append(newLine);
+            sb.append(NEWLINE);
         }
-        jta.append(sb.toString()+newLine);
+        jta.append(sb.toString()+NEWLINE);
         try {
             toServer = new DataOutputStream(socket.getOutputStream());
             toServer.writeBytes(sb.toString());
@@ -219,7 +219,7 @@ public class Client extends JFrame {
                 BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(selectFile)));
                 String line = br.readLine();
                 while (line != null) {
-                    sb.append(line).append(newLine);
+                    sb.append(line).append(NEWLINE);
                     line = br.readLine();
                 }
                 return sb.toString();
@@ -246,16 +246,19 @@ public class Client extends JFrame {
                 boundary = System.currentTimeMillis();
                 header = Header.parse("Content-Type: multipart/form-data; boundary=----httpClient"+boundary);
             }
-            sb.append(header.toString()).append(newLine);
+            sb.append(header.toString()).append(NEWLINE);
+            sb.append(Header.parse("Host: "+(urlInput.getText()).trim().split("/")[0])).append(NEWLINE);
             if (!requestHeader.isEmpty()) {
-                sb.append(requestHeader).append(newLine);
+                sb.append(requestHeader).append(NEWLINE);
             }
             if (boundary != null) {
-                sb.append(Header.parse("Content-Length: " + selectFile.length()+requestBody.length())).append(newLine);
+                sb.append(Header.parse("Content-Length: " + selectFile.length()+requestBody.length())).append(NEWLINE);
             }
         } else if (method.equals("GET")) {// GET
+            sb.append(Header.parse("Host: "+(urlInput.getText()).trim().split("/")[0])).append(NEWLINE);
             return sb;
         } else{ // DELETE
+            sb.append(Header.parse("Host: "+(urlInput.getText()).trim().split("/")[0])).append(NEWLINE);
             return sb;
         }
         return sb;

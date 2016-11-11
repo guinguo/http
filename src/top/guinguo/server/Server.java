@@ -74,7 +74,7 @@ public class Server extends JFrame {
         public void run() {
             try {
                 HttpRequest request = new HttpRequest(socket.getInputStream());
-                HttpResponse response = new HttpResponse(socket.getOutputStream());
+//                HttpResponse response = new HttpResponse(socket.getOutputStream());
                 DataInputStream inputFromClient =
                         new DataInputStream(socket.getInputStream());
 
@@ -85,7 +85,7 @@ public class Server extends JFrame {
                     System.out.write(bytes,0,len);
                 }
 
-                this.server.handle(request, response);
+//                this.server.handle(request, response);
 
             } catch (IOException e) {
                 System.err.println(e.getMessage());

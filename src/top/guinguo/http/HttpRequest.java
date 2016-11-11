@@ -1,5 +1,7 @@
 package top.guinguo.http;
 
+
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,7 +10,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 /**
  * Created by guin_guo on 2016/11/7.
  */
@@ -19,6 +20,7 @@ public class HttpRequest {
     private List<Header> headers = new ArrayList<>();
     private Long contentLength;
     private Map<String, String> postParams = new HashMap<>();
+    private StringBuffer fileContent = new StringBuffer();//not support chinese
 
     public HttpRequest(InputStream inputStream) throws IOException {
         InputStreamReader raw = new InputStreamReader(inputStream);
@@ -33,7 +35,13 @@ public class HttpRequest {
             inputLine = reader.readLine();
         }
         if (formContentHeader.getValue().trim().equals("application/x-www-form-urlencoded")) {
-
+            //get query parameter
+        } else {
+            // file content
+            while (inputLine != null) {
+                fileContent.append(inputLine).append(top.guinguo.util.Constants.NEWLINE);
+                inputLine = reader.readLine();
+            }
         }
     }
 
@@ -103,5 +111,13 @@ public class HttpRequest {
                 }
             }
         }
+    }
+
+    public StringBuffer getFileContent() {
+        return fileContent;
+    }
+
+    public Header getFormContentHeader() {
+        return formContentHeader;
     }
 }
