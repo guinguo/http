@@ -2,14 +2,14 @@ package top.guinguo.http;
 
 
 
+import top.guinguo.util.Constants;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 /**
  * Created by guin_guo on 2016/11/7.
  */
@@ -23,7 +23,7 @@ public class HttpRequest {
     private StringBuffer fileContent = new StringBuffer();//not support chinese
 
     public HttpRequest(InputStream inputStream) throws IOException {
-        InputStreamReader raw = new InputStreamReader(inputStream);
+        InputStreamReader raw = new InputStreamReader(inputStream,"UTF-8");
         BufferedReader reader = new BufferedReader(raw);
         String inputLine = reader.readLine();
         while (inputLine != null && !inputLine.isEmpty()) {
@@ -34,13 +34,16 @@ public class HttpRequest {
             }
             inputLine = reader.readLine();
         }
-        if (formContentHeader.getValue().trim().equals("application/x-www-form-urlencoded")) {
-            //get query parameter
-        } else {
-            // file content
-            while (inputLine != null) {
-                fileContent.append(inputLine).append(top.guinguo.util.Constants.NEWLINE);
+        if (formContentHeader != null) {
+            if (formContentHeader.getValue().trim().equals("application/x-www-form-urlencoded")) {
+                //get query parameter
+            } else {
+                // file content
                 inputLine = reader.readLine();
+                while (inputLine != null) {
+                    fileContent.append(inputLine).append(top.guinguo.util.Constants.NEWLINE);
+                    inputLine = reader.readLine();
+                }
             }
         }
     }
@@ -110,6 +113,22 @@ public class HttpRequest {
                     }
                 }
             }
+        }
+
+        public String getRoute() {
+            return route;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public String getQueryString() {
+            return queryString;
+        }
+
+        public Map<String, String> getParams() {
+            return params;
         }
     }
 

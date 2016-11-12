@@ -14,7 +14,6 @@ public class HttpResponse {
     private ResponseStatusCode code;
 
     private OutputStream outputStream;
-    private InputStream inputStream;
     private Charset charset = Charset.UTF8;
     private ContentType contentType;
     private long contentLengthInBytes;
@@ -23,9 +22,6 @@ public class HttpResponse {
 
     public HttpResponse(OutputStream outputStream) {
         this.outputStream = outputStream;
-    }
-    public HttpResponse(InputStream inputStream) {
-        this.inputStream = inputStream;
     }
 
     public void renderByType(String content, ContentType type) {
@@ -76,6 +72,7 @@ public class HttpResponse {
         public String getMimeType() {
             return mimeType;
         }
+        
     }
 
     public enum ResponseStatusCode {
@@ -139,5 +136,24 @@ public class HttpResponse {
 
     public void setContentLengthInBytes(long contentLengthInBytes) {
         this.contentLengthInBytes = contentLengthInBytes;
+    }
+
+    public ContentType switchType(String extension) {
+        if (extension != null) {
+            if (extension.toLowerCase().endsWith(".txt")) {
+                return ContentType.TEXT;
+            } else if (extension.toLowerCase().endsWith(".css")) {
+                return ContentType.CSS;
+            } else if (extension.toLowerCase().endsWith(".js")) {
+                return ContentType.JS;
+            } else if (extension.toLowerCase().endsWith(".json")) {
+                return ContentType.JSON;
+            } else if (extension.toLowerCase().endsWith(".html")) {
+                return ContentType.HTML;
+            } else {
+                return null;
+            }
+        }
+        return null;
     }
 }

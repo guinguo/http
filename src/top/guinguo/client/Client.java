@@ -3,6 +3,7 @@ package top.guinguo.client;
 import top.guinguo.http.Header;
 import top.guinguo.http.HttpResponse;
 import top.guinguo.util.DialogUtil;
+import top.guinguo.util.HttpUtils;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -12,6 +13,9 @@ import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.Socket;
 
+import static top.guinguo.util.Constants.NEWLINE;
+import static top.guinguo.util.Constants.SERVERNAME;
+
 /**
  * Created by guin_guo on 2016/11/7.
  */
@@ -20,6 +24,7 @@ public class Client extends JFrame {
     public static int port;
     public static String  lastQueryUrl;
     public static String NEWLINE = top.guinguo.util.Constants.NEWLINE;
+    private StringBuffer stringBuffer;
 
     //input for url
     private JTextField urlInput = new JTextField();
@@ -40,7 +45,7 @@ public class Client extends JFrame {
     private JTextArea header = new JTextArea();
     private JTextArea body = new JTextArea();
     //IO
-    private DataOutputStream toServer;
+    private PrintWriter toServer;
     private InputStream fromServer;
 
     public static void main(String[] args) {
@@ -137,23 +142,27 @@ public class Client extends JFrame {
                             port = 80;
                         }
                         socket = new Socket(host,port);
-                        socket.setSendBufferSize(8*1024*1024);//8M
                         socket = sendSocket(socket, url, method, requestHeader,requestBody);
-                        if (socket.isConnected()) {
-                            //send 2 server
-                            fromServer = socket.getInputStream();
+                        if (socket != null) {
+                            toServer = new PrintWriter(socket.getOutputStream(),true);
+                            toServer.print(stringBuffer.append(NEWLINE).toString());
+                            toServer.flush();
                         }
+                        /*if (fromServer != null) {
+                            InputStreamReader raw = new InputStreamReader(fromServer,"UTF-8");
+                            BufferedReader reader = new BufferedReader(raw);
+                            String inputLine = reader.readLine();
+                            while (inputLine != null && !inputLine.isEmpty()) {
+                                System.out.println(inputLine+"========");
+                            }
+                        }*/
                     } catch (IOException ex) {
                         ex.printStackTrace();
                         DialogUtil.showMsg(ex.getClass()+":"+ex.getLocalizedMessage());
                         jta.append(ex.getClass() + ":" + ex.getLocalizedMessage() + "\n");
                     }
 
-                    //2.print response
-                    if (socket != null) {
-                        HttpResponse response = new HttpResponse(socket.getOutputStream());//TODO
-                    }
-                } catch (IOException e1) {
+                } catch (Exception e1) {
                     e1.printStackTrace();
                     DialogUtil.showMsg(e1.getMessage());
                 } finally {
@@ -181,9 +190,9 @@ public class Client extends JFrame {
     }
 
     public Socket sendSocket(Socket socket, String url, String method, String requestHeader, String requestBody) {
-        StringBuffer sb = new StringBuffer();
+        stringBuffer = new StringBuffer();
         //first line   GET url HTTP/1.1 \n\r
-        sb.append(method + " ");
+        stringBuffer.append(method + " ");
         if (url == null || url.isEmpty()) {
             DialogUtil.showMsg("请输入请求地址");
             return null;
@@ -191,61 +200,39 @@ public class Client extends JFrame {
         if (!url.startsWith("http://")) {
             url = "http://" + url;
         }
-        sb.append(url + " " + "HTTP/1.1").append(NEWLINE);
+        stringBuffer.append(url + " " + "HTTP/1.1").append(NEWLINE);
         //second header body
-        sb = prepareReq(sb, method, requestHeader,requestBody);
+        stringBuffer = prepareReq(stringBuffer, method, requestHeader,requestBody);
         if (!method.equals("GET")) {
-            sb.append(NEWLINE);
+            stringBuffer.append(NEWLINE);
         }
         if (boundary != null) {
-            sb.append("------httpClient" + boundary).append(NEWLINE);
-            sb.append(Header.parse("Content-Disposition: form-data; name=\"file\"; filename=\"" + selectFile.getName() + "\"")).append(NEWLINE);
-            sb.append(Header.parse("Content-Type: text/html")).append(NEWLINE).append(NEWLINE);
-            sb.append(toFileText());
-            sb.append("------httpClient" + boundary);
+            stringBuffer.append("------"+SERVERNAME + boundary).append(NEWLINE);
+            stringBuffer.append(Header.parse("Content-Disposition: form-data; name=\"file\"; filename=\"" + selectFile.getName() + "\"")).append(NEWLINE);
+            stringBuffer.append(Header.parse("Content-Type: text/html")).append(NEWLINE).append(NEWLINE);
+            stringBuffer.append(toFileText());
+            stringBuffer.append("------"+SERVERNAME + boundary);
             if (requestBody.isEmpty()) {
-                sb.append("--");
+                stringBuffer.append("--");
             }
-            sb.append(NEWLINE);
+            stringBuffer.append(NEWLINE);
         }
         if (!requestBody.isEmpty()) {
             if (boundary != null) {
-                sb.append(Header.parse("Content-Disposition: form-data;")).append(NEWLINE);
+                stringBuffer.append(Header.parse("Content-Disposition: form-data;")).append(NEWLINE);
             }
-            sb.append(requestBody).append(NEWLINE);
+            stringBuffer.append(requestBody).append(NEWLINE);
             if (boundary != null) {
-                sb.append("------httpClient" + boundary).append("--");
+                stringBuffer.append("------"+SERVERNAME + boundary).append("--");
             }
-            sb.append(NEWLINE);
+            stringBuffer.append(NEWLINE);
         }
-        jta.append(sb.toString()+NEWLINE);
-        try {
-            toServer = new DataOutputStream(socket.getOutputStream());
-            toServer.writeBytes(sb.toString());
-            toServer.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-            DialogUtil.showMsg(e.getMessage());
-        }
+        jta.append(stringBuffer.toString()+NEWLINE);
         return socket;
     }
 
     private String toFileText() {
-        if (selectFile != null) {
-            StringBuffer sb = new StringBuffer();
-            try {
-                BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(selectFile)));
-                String line = br.readLine();
-                while (line != null) {
-                    sb.append(line).append(NEWLINE);
-                    line = br.readLine();
-                }
-                return sb.toString();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return "";
+        return HttpUtils.toFileText(selectFile);
     }
 
     private StringBuffer prepareReq(StringBuffer sb, String method, String requestHeader, String requestBody) {
@@ -262,7 +249,7 @@ public class Client extends JFrame {
                 header = Header.parse("Content-Type: application/x-www-form-urlencoded");
             } else if (selectFile != null) {
                 boundary = System.currentTimeMillis();
-                header = Header.parse("Content-Type: multipart/form-data; boundary=----httpClient"+boundary);
+                header = Header.parse("Content-Type: multipart/form-data; boundary=----"+SERVERNAME+boundary);
             }
             sb.append(header.toString()).append(NEWLINE);
             sb.append(Header.parse("Host: "+(urlInput.getText()).trim().split("/")[0])).append(NEWLINE);
