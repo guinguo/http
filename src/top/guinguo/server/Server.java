@@ -2,6 +2,7 @@ package top.guinguo.server;
 
 import top.guinguo.http.HttpRequest;
 import top.guinguo.http.HttpResponse;
+import top.guinguo.util.Constants;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,14 +12,15 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.*;
 
 /**
  * Created by guin_guo on 2016/11/7.
  */
 public class Server extends JFrame {
-    private static int port = 8000;
+    private static int port = 80;
     private ServerSocket serverSocket;
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -73,8 +75,8 @@ public class Server extends JFrame {
         @Override
         public void run() {
             try {
-                HttpRequest request = new HttpRequest(socket.getInputStream());
-//                HttpResponse response = new HttpResponse(socket.getOutputStream());
+//                HttpRequest request = new HttpRequest(socket.getInputStream());
+                HttpResponse response = new HttpResponse(socket.getOutputStream());
                 DataInputStream inputFromClient =
                         new DataInputStream(socket.getInputStream());
 
@@ -102,8 +104,29 @@ public class Server extends JFrame {
         }
 
     }
-    public void handle(HttpRequest request, HttpResponse response) {
+    public void handle(HttpRequest req, HttpResponse resp) {
+        //distribute method
+        if (req.getRequestTpye().equals(HttpRequest.RequsetType.GET)) {
+            this.doGet(req, resp);
+        } /*else if (req.getRequestTpye().equals(HttpRequest.RequsetType.POST)) {
+            this.doPost(req, resp);
+        } else if (req.getRequestTpye().equals(HttpRequest.RequsetType.PUT)) {
+            this.doPut(req, resp);
+        } else if (req.getRequestTpye().equals(HttpRequest.RequsetType.DELETE)) {
+            this.doDelete(req, resp);
+        }*/ else {
+            String errMsg1 = ("http.method_not_implemented");
+            Object[] errArgs = new Object[]{req.getRequestTpye()};
+            errMsg1 = MessageFormat.format(errMsg1, errArgs);
+            resp.setCode(HttpResponse.ResponseStatusCode.InternalServerError);
+            resp.renderByType(errMsg1, HttpResponse.ContentType.TEXT);
+        }
     }
+
+    private void doGet(HttpRequest req, HttpResponse resp) {
+
+    }
+
     public void log(String msg) {
         //jta.append
         jta.append(sdf.format(new Date()) + " INFO " + " "+msg+"\n");

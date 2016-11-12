@@ -17,7 +17,7 @@ public class HttpRequest {
     private URL url;
     private RequsetType requestTpye;
     private Header formContentHeader;
-    private List<Header> headers = new ArrayList<>();
+    private Map<String,Header> headers = new HashMap<>();
     private Long contentLength;
     private Map<String, String> postParams = new HashMap<>();
     private StringBuffer fileContent = new StringBuffer();//not support chinese
@@ -52,7 +52,7 @@ public class HttpRequest {
         } else if (header.getKey().equals("Content-Type")) {
             this.formContentHeader = header;
         }
-        this.headers.add(header);
+        this.headers.put(header.getKey(),header);
     }
 
     private void parseReqType(String value) {
@@ -69,7 +69,7 @@ public class HttpRequest {
         return requestTpye;
     }
 
-    public List<Header> getHeaders() {
+    public Map<String, Header> getHeaders() {
         return headers;
     }
 

@@ -4,6 +4,8 @@ import top.guinguo.util.Charset;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.Date;
 
 /**
  * Created by guin_guo on 2016/11/7.
@@ -16,12 +18,45 @@ public class HttpResponse {
     private Charset charset = Charset.UTF8;
     private ContentType contentType;
     private long contentLengthInBytes;
+    private static final String CONN_CLOSE_HEADER_STRING =
+            new Header("Connection", "close").toString();
 
     public HttpResponse(OutputStream outputStream) {
         this.outputStream = outputStream;
     }
     public HttpResponse(InputStream inputStream) {
         this.inputStream = inputStream;
+    }
+
+    public void renderByType(String content, ContentType type) {
+        this.contentType = type;
+        this.renderText(content);
+    }
+
+    public void renderHTML(String html) {
+        this.contentType = ContentType.HTML;
+        this.renderText(html);
+    }
+
+    public void renderText(String text) {
+        this.contentLengthInBytes = text.length();
+        PrintStream pstream = writerHeaders();
+        pstream.println(text);
+        pstream.flush();
+        pstream.close();
+    }
+
+    public PrintStream writerHeaders(){
+        PrintStream pstream = new PrintStream(outputStream);
+        pstream.println(code.getResponseHeader());
+        pstream.println(getContentType());
+        pstream.println(new Header("Content-Length", String.valueOf(contentLengthInBytes)));
+        pstream.println(CONN_CLOSE_HEADER_STRING);
+        pstream.println(Header.parse("Date: " + new Date()));
+        pstream.println(Header.parse("Server: HttpServer/1.1"));
+        pstream.println();
+        pstream.flush();
+        return pstream;
     }
 
     public enum ContentType {
