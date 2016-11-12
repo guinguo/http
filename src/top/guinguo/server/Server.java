@@ -82,6 +82,7 @@ public class Server extends JFrame {
                 HttpResponse response = new HttpResponse(socket.getOutputStream());
                 this.server.handle(request, response);
 
+
             } catch (IOException e) {
                 System.err.println(e.getMessage());
                 jta.append(e.getMessage());
@@ -144,10 +145,12 @@ public class Server extends JFrame {
             }
         } catch (Exception e) {
             resp.setCode(HttpResponse.ResponseStatusCode.InternalServerError);
+            resp.renderText("ERROR");
             e.printStackTrace();
             return;
         }
         resp.setCode(HttpResponse.ResponseStatusCode.NotFound);
+        resp.renderText("404");
         return;
     }
 
@@ -182,10 +185,12 @@ public class Server extends JFrame {
                 writer.close();
                 resp.setCode(HttpResponse.ResponseStatusCode.OK);
                 resp.setContentType(HttpResponse.ContentType.JSON);
-                resp.renderText("{\"status\":\"success\",\"filename\":\"" + tm == null ? fileName : fileName + "-" + tm + "\"}");
+                resp.renderText("{\"status\":\"success\",\"filename\":\""
+                        + tm == null ? fileName : fileName + "-" + tm + "\"}");
             }
         } catch (IOException e) {
             resp.setCode(HttpResponse.ResponseStatusCode.InternalServerError);
+            resp.renderText("ERROR");
             e.printStackTrace();
             return;
         }
@@ -214,6 +219,7 @@ public class Server extends JFrame {
             }
         } catch (IOException e) {
             resp.setCode(HttpResponse.ResponseStatusCode.InternalServerError);
+            resp.renderText("ERROR");
             e.printStackTrace();
             return;
         }
@@ -236,10 +242,12 @@ public class Server extends JFrame {
             }
         } catch (Exception e) {
             resp.setCode(HttpResponse.ResponseStatusCode.InternalServerError);
+            resp.renderText("ERROR");
             e.printStackTrace();
             return;
         }
         resp.setCode(HttpResponse.ResponseStatusCode.NotFound);
+        resp.renderText("404");
         return;
     }
 

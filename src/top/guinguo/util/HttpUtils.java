@@ -14,7 +14,7 @@ public class HttpUtils {
             StringBuffer sb = new StringBuffer();
             BufferedReader br = null;
             try {
-                br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+                br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"));
                 String line = br.readLine();
                 while (line != null) {
                     sb.append(line).append(Constants.NEWLINE);

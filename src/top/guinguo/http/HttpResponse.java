@@ -36,16 +36,20 @@ public class HttpResponse {
 
     public void renderText(String text) {
         this.contentLengthInBytes = text.length();
+        if (this.contentType == null) {
+            this.contentType = ContentType.TEXT;
+        }
         PrintStream pstream = writerHeaders();
         pstream.println(text);
+        pstream.println();
+        pstream.println();
         pstream.flush();
-        pstream.close();
     }
 
     public PrintStream writerHeaders(){
         PrintStream pstream = new PrintStream(outputStream);
         pstream.println(code.getResponseHeader());
-        pstream.println(getContentType());
+        pstream.println(Header.parse("ContentType: " + getContentType().getMimeType()));
         pstream.println(new Header("Content-Length", String.valueOf(contentLengthInBytes)));
         pstream.println(CONN_CLOSE_HEADER_STRING);
         pstream.println(Header.parse("Date: " + new Date()));
@@ -72,7 +76,7 @@ public class HttpResponse {
         public String getMimeType() {
             return mimeType;
         }
-        
+
     }
 
     public enum ResponseStatusCode {

@@ -144,18 +144,19 @@ public class Client extends JFrame {
                         socket = new Socket(host,port);
                         socket = sendSocket(socket, url, method, requestHeader,requestBody);
                         if (socket != null) {
-                            toServer = new PrintWriter(socket.getOutputStream(),true);
+                            toServer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"), true);
                             toServer.print(stringBuffer.append(NEWLINE).toString());
                             toServer.flush();
                         }
-                        /*if (fromServer != null) {
-                            InputStreamReader raw = new InputStreamReader(fromServer,"UTF-8");
+                        if (socket != null) {
+                            InputStreamReader raw = new InputStreamReader(socket.getInputStream(),"UTF-8");
                             BufferedReader reader = new BufferedReader(raw);
                             String inputLine = reader.readLine();
                             while (inputLine != null && !inputLine.isEmpty()) {
                                 System.out.println(inputLine+"========");
+                                inputLine = reader.readLine();
                             }
-                        }*/
+                        }
                     } catch (IOException ex) {
                         ex.printStackTrace();
                         DialogUtil.showMsg(ex.getClass()+":"+ex.getLocalizedMessage());
