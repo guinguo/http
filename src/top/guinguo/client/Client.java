@@ -111,8 +111,8 @@ public class Client extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
         setLocation(200,100);
-        this.host = "localhost";
-        this.port = 8000;
+        /*this.host = "localhost";
+        this.port = 8000;*/
     }
 
     private class ButtonListener implements ActionListener {
@@ -128,27 +128,45 @@ public class Client extends JFrame {
                     String requestHeader = header.getText();
                     String requestBody   = body.getText();
                     try {
+                        String host_port = url.split("/")[0];
+                        if (host_port.contains(":")) {
+                            host = host_port.split(":")[0];
+                            port = Integer.parseInt(host_port.split(":")[1]);
+                        } else {
+                            host = host_port;
+                            port = 80;
+                        }
                         socket = new Socket(host,port);
                         socket.setSendBufferSize(8*1024*1024);//8M
                         socket = sendSocket(socket, url, method, requestHeader,requestBody);
-                        //send 2 server
-                        if (socket != null) {
+                        if (socket.isConnected()) {
+                            //send 2 server
                             fromServer = socket.getInputStream();
-
                         }
                     } catch (IOException ex) {
-                        jta.append(ex.getMessage() + "\n");
+                        ex.printStackTrace();
+                        DialogUtil.showMsg(ex.getClass()+":"+ex.getLocalizedMessage());
+                        jta.append(ex.getClass() + ":" + ex.getLocalizedMessage() + "\n");
                     }
 
                     //2.print response
-                    HttpResponse response = new HttpResponse(socket.getInputStream());//TODO
+                    if (socket != null) {
+                        HttpResponse response = new HttpResponse(socket.getOutputStream());//TODO
+                    }
                 } catch (IOException e1) {
-                    System.err.println(e1.getMessage());
+                    e1.printStackTrace();
+                    DialogUtil.showMsg(e1.getMessage());
                 } finally {
                     try {
-                        toServer.close();
-                        fromServer.close();
-                        socket.close();
+                        if (toServer != null) {
+                            toServer.close();
+                        }
+                        if (fromServer != null) {
+                            fromServer.close();
+                        }
+                        if (socket != null) {
+                            socket.close();
+                        }
                     } catch (IOException e1) {
                         e1.printStackTrace();
                     }
