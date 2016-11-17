@@ -161,15 +161,15 @@ public class Server extends JFrame {
                 String separator = fcs[0];
                 Header header = Header.parse(fcs[1]);
                 String filN = header.getValue().split(";")[2];
-                String fileName = filN.substring(filN.indexOf("\"")+1, filN.length()-1);
+                String fileName = filN.substring(filN.indexOf("\"") + 1, filN.length() - 1);
                 File file = new File(Constants.PUBLICPATH + "\\" + fileName);
                 Long tm = null;
                 if (file.exists()) {
                     tm = System.currentTimeMillis();
-                    file = new File(Constants.PUBLICPATH + "\\" + fileName+"-"+tm);
+                    file = new File(Constants.PUBLICPATH + "\\" + fileName + "-" + tm);
                 }
                 PrintWriter writer = new PrintWriter(new FileWriter(file));
-                for (int i = 4;i<fcs.length;i++) {
+                for (int i = 4; i < fcs.length; i++) {
                     if (fcs[i].startsWith(separator)) {
                         break;
                     }
@@ -185,8 +185,12 @@ public class Server extends JFrame {
                 writer.close();
                 resp.setCode(HttpResponse.ResponseStatusCode.OK);
                 resp.setContentType(HttpResponse.ContentType.JSON);
-                resp.renderText("{\"status\":\"success\",\"filename\":\""
-                        + tm == null ? fileName : fileName + "-" + tm + "\"}");
+                String retName = tm == null ? fileName : fileName + "-" + tm;
+                resp.renderText("{\"status\":\"success\",\"filename\":\"" + retName + "\"}");
+            } else {
+                resp.setCode(HttpResponse.ResponseStatusCode.BadRequest);
+                resp.setContentType(HttpResponse.ContentType.JSON);
+                resp.renderText("{\"status\":\"fail\",\"mg\":\"without special any request body.\"}");
             }
         } catch (IOException e) {
             resp.setCode(HttpResponse.ResponseStatusCode.InternalServerError);
@@ -216,6 +220,10 @@ public class Server extends JFrame {
                 resp.setCode(HttpResponse.ResponseStatusCode.OK);
                 resp.setContentType(HttpResponse.ContentType.JSON);
                 resp.renderText("{\"status\":\"success\",\"filename\":\"" + fileName + "\"}");
+            } else {
+                resp.setCode(HttpResponse.ResponseStatusCode.BadRequest);
+                resp.setContentType(HttpResponse.ContentType.JSON);
+                resp.renderText("{\"status\":\"fail\",\"mg\":\"without special any request body.\"}");
             }
         } catch (IOException e) {
             resp.setCode(HttpResponse.ResponseStatusCode.InternalServerError);

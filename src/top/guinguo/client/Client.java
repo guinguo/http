@@ -149,13 +149,7 @@ public class Client extends JFrame {
                             toServer.flush();
                         }
                         if (socket != null) {
-                            InputStreamReader raw = new InputStreamReader(socket.getInputStream(),"UTF-8");
-                            BufferedReader reader = new BufferedReader(raw);
-                            String inputLine = reader.readLine();
-                            while (inputLine != null && !inputLine.isEmpty()) {
-                                System.out.println(inputLine+"========");
-                                inputLine = reader.readLine();
-                            }
+                            printResponse(socket);
                         }
                     } catch (IOException ex) {
                         ex.printStackTrace();
@@ -187,6 +181,26 @@ public class Client extends JFrame {
             } else if (button.getText().equals("clear")) {
                 jta.setText("");
             }
+        }
+    }
+
+    private void printResponse(Socket socket) {
+        jta.append("----------------Response---------------"+NEWLINE);
+        try {
+            InputStreamReader raw = new InputStreamReader(socket.getInputStream(),"UTF-8");
+            BufferedReader reader = new BufferedReader(raw);
+            String inputLine = reader.readLine();
+            while (inputLine != null && !inputLine.isEmpty()) {
+                log(inputLine);
+                if ("Server: HttpServer/1.1".equals(inputLine)) {
+                    log("");
+                }
+                inputLine = reader.readLine();
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            DialogUtil.showMsg(ex.getClass()+":"+ex.getLocalizedMessage());
+            jta.append(ex.getClass() + ":" + ex.getLocalizedMessage() + "\n");
         }
     }
 
@@ -228,6 +242,8 @@ public class Client extends JFrame {
             }
             stringBuffer.append(NEWLINE);
         }
+        jta.setText("");
+        jta.append("----------------Request-----------------"+NEWLINE);
         jta.append(stringBuffer.toString()+NEWLINE);
         return socket;
     }
@@ -272,6 +288,6 @@ public class Client extends JFrame {
 
     public void log(String msg) {
         //jta.append
-        jta.append(msg);
+        jta.append(msg+NEWLINE);
     }
 }

@@ -4,10 +4,7 @@ package top.guinguo.http;
 
 import top.guinguo.util.Constants;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -40,10 +37,12 @@ public class HttpRequest {
             } else {
                 // file content
                 inputLine = reader.readLine();
-                while (inputLine != null) {
+                String fileSeparator = "--" + formContentHeader.getValue().substring(formContentHeader.getValue().indexOf("=") + 1) + "--";
+                while (inputLine != null && !fileSeparator.equals(inputLine)) {
                     fileContent.append(inputLine).append(top.guinguo.util.Constants.NEWLINE);
                     inputLine = reader.readLine();
                 }
+                fileContent.append(fileSeparator);
             }
         }
     }

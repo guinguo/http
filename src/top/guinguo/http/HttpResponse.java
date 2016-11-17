@@ -42,7 +42,6 @@ public class HttpResponse {
         PrintStream pstream = writerHeaders();
         pstream.println(text);
         pstream.println();
-        pstream.println();
         pstream.flush();
     }
 
@@ -54,8 +53,6 @@ public class HttpResponse {
         pstream.println(CONN_CLOSE_HEADER_STRING);
         pstream.println(Header.parse("Date: " + new Date()));
         pstream.println(Header.parse("Server: HttpServer/1.1"));
-        pstream.println();
-        pstream.flush();
         return pstream;
     }
 
