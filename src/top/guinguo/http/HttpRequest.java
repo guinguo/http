@@ -31,6 +31,9 @@ public class HttpRequest {
             }
             inputLine = reader.readLine();
         }
+        if (!this.getUrl().getRoute().startsWith("http")) {
+            url = new URL(this.headers.get("Host").getValue()+this.getUrl().getRoute());
+        }
         if (formContentHeader != null) {
             if (formContentHeader.getValue().trim().equals("application/x-www-form-urlencoded")) {
                 //get query parameter

@@ -1,7 +1,6 @@
 package top.guinguo.client;
 
 import top.guinguo.http.Header;
-import top.guinguo.http.HttpResponse;
 import top.guinguo.util.DialogUtil;
 import top.guinguo.util.HttpUtils;
 
@@ -13,26 +12,36 @@ import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.Socket;
 
-import static top.guinguo.util.Constants.NEWLINE;
 import static top.guinguo.util.Constants.SERVERNAME;
 
 /**
  * Created by guin_guo on 2016/11/7.
  */
 public class Client extends JFrame {
+    /**
+     * 主机地址
+     */
     public static String host;
+    /**
+     * 主机端口
+     */
     public static int port;
-    public static String  lastQueryUrl;
+    /**
+     * 空行字符
+     */
     public static String NEWLINE = top.guinguo.util.Constants.NEWLINE;
+    /**
+     * 请求内容
+     */
     private StringBuffer stringBuffer;
 
-    //input for url
+    //url输入框
     private JTextField urlInput = new JTextField();
 
-    //display for receive from server
-    private JTextArea jta = new JTextArea();
+    //显示框
+    private JTextArea showMsg = new JTextArea();
 
-    JButton send = new JButton("send");
+    private JButton send = new JButton("send");
     private JButton openFile = new JButton("open");
     private JButton clear = new JButton("clear");
     private JFileChooser fileChooser = new JFileChooser();
@@ -49,8 +58,31 @@ public class Client extends JFrame {
     private InputStream fromServer;
 
     public static void main(String[] args) {
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        }
+        catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(Client.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(Client.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(Client.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(Client.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
         new Client();
     }
+//    public static void main(String[] args) {
+//        new ();
+//    }
 
     public Client() {
         JPanel p = new JPanel();
@@ -103,8 +135,8 @@ public class Client extends JFrame {
 
         setLayout(new BorderLayout());
         add(p, BorderLayout.NORTH);
-        jta.setEditable(false);
-        add(new JScrollPane(jta), BorderLayout.CENTER);
+        showMsg.setEditable(false);
+        add(new JScrollPane(showMsg), BorderLayout.CENTER);
 
         //addActionListener
         openFile.addActionListener(new ButtonListener());
@@ -154,7 +186,7 @@ public class Client extends JFrame {
                     } catch (IOException ex) {
                         ex.printStackTrace();
                         DialogUtil.showMsg(ex.getClass()+":"+ex.getLocalizedMessage());
-                        jta.append(ex.getClass() + ":" + ex.getLocalizedMessage() + "\n");
+                        showMsg.append(ex.getClass() + ":" + ex.getLocalizedMessage() + "\n");
                     }
 
                 } catch (Exception e1) {
@@ -179,13 +211,13 @@ public class Client extends JFrame {
                 fileChooser.showDialog(new JLabel(), "选择文件");
                 selectFile =fileChooser.getSelectedFile();
             } else if (button.getText().equals("clear")) {
-                jta.setText("");
+                showMsg.setText("");
             }
         }
     }
 
     private void printResponse(Socket socket) {
-        jta.append("----------------Response---------------"+NEWLINE);
+        showMsg.append("----------------Response---------------"+NEWLINE);
         try {
             InputStreamReader raw = new InputStreamReader(socket.getInputStream(),"UTF-8");
             BufferedReader reader = new BufferedReader(raw);
@@ -200,7 +232,7 @@ public class Client extends JFrame {
         } catch (IOException ex) {
             ex.printStackTrace();
             DialogUtil.showMsg(ex.getClass()+":"+ex.getLocalizedMessage());
-            jta.append(ex.getClass() + ":" + ex.getLocalizedMessage() + "\n");
+            showMsg.append(ex.getClass() + ":" + ex.getLocalizedMessage() + "\n");
         }
     }
 
@@ -242,9 +274,9 @@ public class Client extends JFrame {
             }
             stringBuffer.append(NEWLINE);
         }
-        jta.setText("");
-        jta.append("----------------Request-----------------"+NEWLINE);
-        jta.append(stringBuffer.toString()+NEWLINE);
+        showMsg.setText("");
+        showMsg.append("----------------Request-----------------"+NEWLINE);
+        showMsg.append(stringBuffer.toString()+NEWLINE);
         return socket;
     }
 
@@ -287,7 +319,7 @@ public class Client extends JFrame {
     }
 
     public void log(String msg) {
-        //jta.append
-        jta.append(msg+NEWLINE);
+        //showMsg.append
+        showMsg.append(msg+NEWLINE);
     }
 }

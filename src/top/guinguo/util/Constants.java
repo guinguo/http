@@ -12,5 +12,6 @@ public class Constants {
     public static final String NEWLINE = "\r\n";
     public static final String PUBLICPATH = System.getProperty("user.dir") + "\\public";
     public static final String SERVERNAME = "HttpClient";
+    public static final String DEFAULT_HOST_ADDR = "http://localhost";
 
 }

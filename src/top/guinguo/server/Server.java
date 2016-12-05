@@ -26,17 +26,17 @@ public class Server extends JFrame {
     private ServerSocket serverSocket;
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    private JTextArea jta = new JTextArea();
+    private JTextArea showMsg = new JTextArea();
 
     public static void main(String[] args) {
         new Server();
     }
     public Server() {
         setLayout(new BorderLayout());
-        jta.setBackground(Color.BLACK);
-        jta.setForeground(Color.WHITE);
-        jta.setEditable(false);
-        add(new JScrollPane(jta), BorderLayout.CENTER);
+        showMsg.setBackground(Color.BLACK);
+        showMsg.setForeground(Color.WHITE);
+        showMsg.setEditable(false);
+        add(new JScrollPane(showMsg), BorderLayout.CENTER);
 
         setTitle("HttpServer");
         setSize(800, 500);
@@ -85,13 +85,13 @@ public class Server extends JFrame {
 
             } catch (IOException e) {
                 System.err.println(e.getMessage());
-                jta.append(e.getMessage());
+                showMsg.append(e.getMessage());
             } finally {
                 try {
                     socket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
-                    jta.append(e.getMessage());
+                    showMsg.append(e.getMessage());
                 }
             }
 
@@ -187,8 +187,7 @@ public class Server extends JFrame {
                 resp.setContentType(HttpResponse.ContentType.JSON);
                 String retName = tm == null ? fileName : fileName + "-" + tm;
                 resp.renderText("{\"status\":\"success\",\"filename\":\"" + retName + "\"}");
-            } else {
-                resp.setCode(HttpResponse.ResponseStatusCode.BadRequest);
+            } else {                resp.setCode(HttpResponse.ResponseStatusCode.BadRequest);
                 resp.setContentType(HttpResponse.ContentType.JSON);
                 resp.renderText("{\"status\":\"fail\",\"mg\":\"without special any request body.\"}");
             }
@@ -260,7 +259,7 @@ public class Server extends JFrame {
     }
 
     public void log(String msg) {
-        //jta.append
-        jta.append(sdf.format(new Date()) + " INFO " + " "+msg+"\n");
+        //showMsg.append
+        showMsg.append(sdf.format(new Date()) + " INFO " + " "+msg+"\n");
     }
 }
